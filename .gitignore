@@ -62,6 +62,9 @@ compose-dev.yaml
 gcp-storage-keyfile.json
 
 coverage
+
+# Ignore Cursor rules and related files
+/.cursor
 .cursorrules
 
 # Ignore node related files
