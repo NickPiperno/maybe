@@ -32,47 +32,30 @@ class CategoryStats
       end
     end
 
-    # Calculate percentages for each group
-    category_totals = []
+    calculate_category_totals(by_classification)
+  end
 
-    [ "income", "expense" ].each do |classification|
-      totals = by_classification[classification]
+  def period_category_totals(start_date:, end_date:)
+    by_classification = Hash.new { |h, k| h[k] = {} }
 
-      # Only include non-subcategory amounts in the total for percentage calculations
-      total_amount = totals.sum do |_, data|
-        data[:subcategory] ? 0 : data[:amount]
+    family.entries
+      .incomes_and_expenses
+      .where(date: start_date..end_date)
+      .joins("LEFT JOIN categories ON categories.id = account_transactions.category_id")
+      .group("categories.id", "categories.parent_id", income_expense_classification)
+      .select(
+        "categories.id as category_id",
+        "categories.parent_id as parent_category_id",
+        income_expense_classification,
+        "SUM(account_entries.amount) as total"
+      ).each do |row|
+        classification = row.classification
+        category_id = row.category_id
+        by_classification[classification][category_id] ||= { amount: 0, subcategory: row.parent_category_id.present? }
+        by_classification[classification][category_id][:amount] += row.total.abs
       end
 
-      next if total_amount.zero?
-
-      totals.each do |category_id, data|
-        percentage = (data[:amount].to_f / total_amount * 100).round(1)
-
-        category_totals << CategoryTotal.new(
-          category_id: category_id,
-          amount: data[:amount],
-          percentage: percentage,
-          classification: classification,
-          currency: family.currency,
-          subcategory?: data[:subcategory]
-        )
-      end
-    end
-
-    # Calculate totals based on non-subcategory amounts only
-    total_income = category_totals
-      .select { |ct| ct.classification == "income" && !ct.subcategory? }
-      .sum(&:amount)
-
-    total_expense = category_totals
-      .select { |ct| ct.classification == "expense" && !ct.subcategory? }
-      .sum(&:amount)
-
-    CategoryTotals.new(
-      total_income: total_income,
-      total_expense: total_expense,
-      category_totals: category_totals
-    )
+    calculate_category_totals(by_classification)
   end
 
   private
@@ -80,6 +63,62 @@ class CategoryStats
     Stats = Struct.new(:avg, :median, :currency, keyword_init: true)
     CategoryTotals = Struct.new(:total_income, :total_expense, :category_totals, keyword_init: true)
     CategoryTotal = Struct.new(:category_id, :amount, :percentage, :classification, :currency, :subcategory?, keyword_init: true)
+
+    def calculate_category_totals(by_classification)
+      category_totals = []
+
+      ["income", "expense"].each do |classification|
+        totals = by_classification[classification]
+
+        # Only include non-subcategory amounts in the total for percentage calculations
+        total_amount = totals.sum do |_, data|
+          data[:subcategory] ? 0 : data[:amount]
+        end
+
+        next if total_amount.zero?
+
+        totals.each do |category_id, data|
+          percentage = (data[:amount].to_f / total_amount * 100).round(1)
+
+          category_totals << CategoryTotal.new(
+            category_id: category_id,
+            amount: data[:amount],
+            percentage: percentage,
+            classification: classification,
+            currency: family.currency,
+            subcategory?: data[:subcategory]
+          )
+        end
+      end
+
+      # Calculate totals based on non-subcategory amounts only
+      total_income = category_totals
+        .select { |ct| ct.classification == "income" && !ct.subcategory? }
+        .sum(&:amount)
+
+      total_expense = category_totals
+        .select { |ct| ct.classification == "expense" && !ct.subcategory? }
+        .sum(&:amount)
+
+      CategoryTotals.new(
+        total_income: total_income,
+        total_expense: total_expense,
+        category_totals: category_totals
+      )
+    end
+
+    def income_expense_classification
+      @income_expense_classification ||= Arel.sql("
+        CASE 
+          WHEN categories.id IS NULL THEN
+            CASE 
+              WHEN account_entries.amount < 0 THEN 'income' 
+              ELSE 'expense' 
+            END
+          ELSE categories.classification
+        END
+      ")
+    end
 
     def statistics_data
       @statistics_data ||= begin
@@ -163,7 +202,6 @@ class CategoryStats
             .group(Arel.sql("categories.id, categories.parent_id, #{income_expense_classification}, date_trunc('month', account_entries.date)"))
             .order(Arel.sql("date_trunc('month', account_entries.date) DESC"))
     end
-
 
     def calculate_median(numbers)
       return 0 if numbers.empty?

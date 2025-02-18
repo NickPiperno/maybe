@@ -1,0 +1,147 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <%= link_to transactions_path, class: "btn btn--icon btn--secondary" do %>
+        <%= lucide_icon "arrow-left" %>
+      <% end %>
+      <h1 class="text-2xl font-medium text-primary">Spending Reports</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <%= link_to spending_reports_transactions_path(period: params[:period], format: :csv), class: "btn btn--secondary" do %>
+        <%= lucide_icon "file-text" %>
+        <span>Export CSV</span>
+      <% end %>
+      <%= link_to spending_reports_transactions_path(period: params[:period], format: :pdf), class: "btn btn--secondary", target: "_blank" do %>
+        <%= lucide_icon "file" %>
+        <span>Export PDF</span>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex gap-2 border-b border-alpha-black-100">
+    <%= link_to "Last 30 days", spending_reports_transactions_path(period: "last_30_days"),
+        class: "px-4 py-2 text-sm font-medium #{@period.last_30_days? ? 'text-primary border-b-2 border-primary' : 'text-secondary hover:text-primary'}",
+        data: { turbo_frame: "_top" } %>
+    
+    <%= link_to "Last 90 days", spending_reports_transactions_path(period: "last_90_days"),
+        class: "px-4 py-2 text-sm font-medium #{@period.last_90_days? ? 'text-primary border-b-2 border-primary' : 'text-secondary hover:text-primary'}",
+        data: { turbo_frame: "_top" } %>
+    
+    <%= link_to "Last 12 months", spending_reports_transactions_path(period: "last_12_months"),
+        class: "px-4 py-2 text-sm font-medium #{@period.last_12_months? ? 'text-primary border-b-2 border-primary' : 'text-secondary hover:text-primary'}",
+        data: { turbo_frame: "_top" } %>
+    
+    <%= link_to "Year to date", spending_reports_transactions_path(period: "year_to_date"),
+        class: "px-4 py-2 text-sm font-medium #{@period.year_to_date? ? 'text-primary border-b-2 border-primary' : 'text-secondary hover:text-primary'}",
+        data: { turbo_frame: "_top" } %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white p-4 rounded-xl border border-alpha-black-25 shadow-xs">
+      <h2 class="text-lg font-medium text-primary mb-4">Total Spending</h2>
+      <p class="text-3xl font-medium text-primary mb-2">
+        <%= format_money Money.new(@totals.expense_total, @totals.currency) %>
+      </p>
+      <p class="text-sm text-secondary">
+        <%= pluralize(@expense_count, "transaction") %> in <%= @period.name.downcase %>
+      </p>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-alpha-black-25 shadow-xs">
+      <h2 class="text-lg font-medium text-primary mb-4">Top Categories</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="h-52"
+          data-controller="pie-chart"
+          data-pie-chart-data-value='<%= Current.family.expense_categories_with_totals_for_period(
+            start_date: @period.date_range.begin,
+            end_date: @period.date_range.end
+          ).category_totals.sort_by(&:amount_money).reverse.first(5).map { |ct|
+            {
+              label: ct.category.name,
+              percent_of_total: ct.percentage.round(1),
+              formatted_value: format_money(ct.amount_money),
+              color: ct.category.color
+            }
+          }.to_json %>'
+          data-pie-chart-total-value="<%= format_money(Money.new(@totals.expense_total, @totals.currency)) %>"
+          data-pie-chart-label-value="total spending"
+        ></div>
+        <div class="space-y-2">
+          <% category_data = Current.family.expense_categories_with_totals_for_period(
+               start_date: @period.date_range.begin,
+               end_date: @period.date_range.end
+             ).category_totals.sort_by(&:amount_money).reverse.first(5) %>
+          <% category_data.each do |category_total| %>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full" style="background-color: <%= category_total.category.color %>"></div>
+                <span class="text-sm text-secondary"><%= category_total.category.name %></span>
+              </div>
+              <span class="text-sm font-medium text-primary">
+                <%= format_money category_total.amount_money %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white p-4 rounded-xl border border-alpha-black-25 shadow-xs">
+    <h2 class="text-lg font-medium text-primary mb-4">Spending Trend</h2>
+    <%= turbo_frame_tag "spending_trend" do %>
+      <div class="h-52">
+        <%= render partial: "shared/line_chart", locals: { series: @spending_series } %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-xl border border-alpha-black-25 shadow-xs">
+    <div class="p-4 border-b border-alpha-black-100">
+      <h2 class="text-lg font-medium text-primary">Recent Expenses</h2>
+    </div>
+    
+    <div class="p-4">
+      <% if @transaction_entries.any? %>
+        <div class="space-y-6">
+          <%= entries_by_date(@transaction_entries, selectable: false) do |entries, transfers| %>
+            <%= render entries, selectable: false %>
+          <% end %>
+        </div>
+        
+        <% if @pagy.pages > 1 %>
+          <div class="mt-4 flex items-center justify-between border-t border-alpha-black-100 pt-4">
+            <div class="flex items-center gap-2">
+              <% if @pagy.prev %>
+                <%= link_to spending_reports_transactions_path(period: params[:period], page: @pagy.prev), class: "btn btn--secondary btn--icon" do %>
+                  <%= lucide_icon "chevron-left" %>
+                <% end %>
+              <% end %>
+              
+              <% @pagy.series.each do |item| %>
+                <% if item.is_a?(Integer) %>
+                  <%= link_to item, spending_reports_transactions_path(period: params[:period], page: item),
+                      class: "btn #{item == @pagy.page ? 'btn--primary' : 'btn--secondary'}" %>
+                <% elsif item.is_a?(String) %>
+                  <span class="btn btn--secondary"><%= item %></span>
+                <% end %>
+              <% end %>
+              
+              <% if @pagy.next %>
+                <%= link_to spending_reports_transactions_path(period: params[:period], page: @pagy.next), class: "btn btn--secondary btn--icon" do %>
+                  <%= lucide_icon "chevron-right" %>
+                <% end %>
+              <% end %>
+            </div>
+            
+            <div class="text-sm text-secondary">
+              Showing <%= @pagy.from %>-<%= @pagy.to %> of <%= @pagy.count %> expenses
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="text-center text-secondary py-8">No expenses found for this period.</p>
+      <% end %>
+    </div>
+  </div>
+</div> 

@@ -1,3 +1,5 @@
+require_relative '../services/spending_report_export'
+
 class TransactionsController < ApplicationController
   include ScrollFocusable
 
@@ -29,6 +31,87 @@ class TransactionsController < ApplicationController
 
     @transfers = @transaction_entries.map { |entry| entry.entryable.transfer_as_outflow }.compact
     @totals = search_query.stats(Current.family.currency)
+  end
+
+  def spending_reports
+    @period = Period.new(params[:period])
+    
+    # Base query for expenses only
+    expense_query = Current.family.entries
+      .joins("LEFT JOIN account_transactions ON account_transactions.id = account_entries.entryable_id AND account_entries.entryable_type = 'Account::Transaction'")
+      .joins("LEFT JOIN categories ON categories.id = account_transactions.category_id")
+      .joins("LEFT JOIN transfers ON transfers.inflow_transaction_id = account_transactions.id OR transfers.outflow_transaction_id = account_transactions.id")
+      .where(date: @period.date_range)
+      .where("transfers.id IS NULL") # Exclude transfers
+      .where("account_entries.amount > 0") # Only include outflows (expenses)
+      .where(
+        "categories.classification = 'expense' OR " \
+        "(categories.id IS NULL AND account_entries.entryable_type = 'Account::Transaction')"
+      )
+
+    @totals = Current.family.entries
+      .where(date: @period.date_range)
+      .stats(Current.family.currency)
+    @expense_count = expense_query.count
+
+    respond_to do |format|
+      format.html do
+        # Get daily spending totals with caching
+        @spending_series = Rails.cache.fetch(["spending_series", Current.family.id, @period.type, Current.family.entries.maximum(:updated_at)&.to_i]) do
+          # Calculate cumulative spending
+          daily_totals = expense_query
+            .group("DATE(account_entries.date)")
+            .select("DATE(account_entries.date) as date, SUM(account_entries.amount) as total")
+            .order("date ASC") # Ensure chronological order for cumulative sum
+
+          # Initialize all dates with zero
+          all_dates = (@period.date_range.begin..@period.date_range.end).map { |date| [date, Money.new(0, Current.family.currency)] }.to_h
+          
+          # Calculate cumulative spending
+          running_total = Money.new(0, Current.family.currency)
+          daily_totals.each do |row|
+            running_total += Money.new(row.total, Current.family.currency)
+            all_dates[row.date] = running_total
+          end
+
+          # Ensure all dates after the last expense show the final total
+          last_total = running_total
+          all_dates.keys.sort.each do |date|
+            if all_dates[date].zero?
+              all_dates[date] = last_total
+            else
+              last_total = all_dates[date]
+            end
+          end
+          
+          TimeSeries.new(
+            all_dates.map { |date, total| { date: date, value: total } },
+            favorable_direction: "down"
+          )
+        end
+
+        @transaction_entries = expense_query
+          .order(date: :desc, created_at: :desc)
+          .preload(entryable: [:category, :merchant, :tags])
+
+        @pagy, @transaction_entries = pagy(@transaction_entries)
+      end
+
+      format.csv do
+        export = SpendingReportExport.new(period: @period, family: Current.family)
+        send_data export.to_csv,
+          filename: "spending-report-#{@period.type}-#{Date.current}.csv",
+          type: "text/csv"
+      end
+
+      format.pdf do
+        export = SpendingReportExport.new(period: @period, family: Current.family)
+        send_data export.to_pdf,
+          filename: "spending-report-#{@period.type}-#{Date.current}.pdf",
+          type: "application/pdf",
+          disposition: "inline"
+      end
+    end
   end
 
   def clear_filter

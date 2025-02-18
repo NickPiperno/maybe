@@ -10,10 +10,10 @@
       <%= format_money Money.new(totals.income_total, totals.currency) %>
     </p>
   </div>
-  <div class="p-4 space-y-2">
+  <%= link_to spending_reports_transactions_path, class: "p-4 space-y-2 hover:bg-gray-25 transition-colors duration-150" do %>
     <p class="text-sm text-secondary">Expenses</p>
     <p class="text-primary font-medium text-xl" id="total-expense">
       <%= format_money Money.new(totals.expense_total, totals.currency) %>
     </p>
-  </div>
+  <% end %>
 </div>

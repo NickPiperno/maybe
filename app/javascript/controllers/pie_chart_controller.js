@@ -61,13 +61,13 @@ export default class extends Controller {
 
     const paths = arcs
       .append("path")
-      .attr("class", (d) => d.data.fill_color)
+      .attr("fill", (d) => d.data.color)
       .attr("d", arc);
 
     paths
       .on("mouseover", (event) => {
-        this.#d3Svg.selectAll(".arc path").attr("class", "fill-gray-200");
-        d3.select(event.target).attr("class", (d) => d.data.fill_color);
+        this.#d3Svg.selectAll(".arc path").attr("fill", "#e5e7eb");
+        d3.select(event.target).attr("fill", (d) => d.data.color);
         this.#d3ContentMemo.html(
           this.#contentDetailTemplate(d3.select(event.target).datum().data),
         );
@@ -75,7 +75,7 @@ export default class extends Controller {
       .on("mouseout", () => {
         this.#d3Svg
           .selectAll(".arc path")
-          .attr("class", (d) => d.data.fill_color);
+          .attr("fill", (d) => d.data.color);
         this.#d3ContentMemo.html(this.#contentSummaryTemplate());
       });
   }
@@ -88,7 +88,7 @@ export default class extends Controller {
     return `
       <span class="text-xl text-gray-900 font-medium">${datum.formatted_value}</span>
       <div class="flex flex-row text-xs gap-2 items-center">
-      <div class="w-[10px] h-[10px] rounded-full ${datum.bg_color}"></div>
+      <div class="w-[10px] h-[10px] rounded-full" style="background-color: ${datum.color}"></div>
         <span>${datum.label}</span>
         <span>${datum.percent_of_total}%</span>
       </div>

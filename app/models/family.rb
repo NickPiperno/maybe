@@ -89,6 +89,12 @@ class Family < ApplicationRecord
     categories_with_stats(classification: "expense", date: date)
   end
 
+  def expense_categories_with_totals_for_period(start_date:, end_date:)
+    Rails.cache.fetch(["expense_categories", id, start_date, end_date, entries.maximum(:updated_at)&.to_i]) do
+      categories_with_stats_for_period(classification: "expense", start_date: start_date, end_date: end_date)
+    end
+  end
+
   def category_stats
     CategoryStats.new(self)
   end
@@ -227,9 +233,17 @@ class Family < ApplicationRecord
     CategoriesWithTotals = Struct.new(:total_money, :category_totals, keyword_init: true)
     CategoryWithStats = Struct.new(:category, :amount_money, :percentage, keyword_init: true)
 
-    def categories_with_stats(classification:, date: Date.current)
-      totals = category_stats.month_category_totals(date: date)
+    def categories_with_stats_for_period(classification:, start_date:, end_date:)
+      totals = category_stats.period_category_totals(start_date: start_date, end_date: end_date)
+      build_categories_with_stats(classification, totals)
+    end
 
+    def categories_with_stats(classification:, date:)
+      totals = category_stats.month_category_totals(date: date)
+      build_categories_with_stats(classification, totals)
+    end
+
+    def build_categories_with_stats(classification, totals)
       classified_totals = totals.category_totals.select { |t| t.classification == classification }
 
       if classification == "income"

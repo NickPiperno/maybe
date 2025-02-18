@@ -120,6 +120,7 @@ Rails.application.routes.draw do
   resources :transactions, only: :index do
     collection do
       delete :clear_filter
+      get :spending_reports
     end
   end
 
