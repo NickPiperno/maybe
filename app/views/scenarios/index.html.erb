@@ -1,0 +1,52 @@
+<div class="space-y-4">
+  <header class="flex justify-between items-center text-primary font-medium">
+    <h1 class="text-xl">What-If Scenarios</h1>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2">
+        <%= link_to affordability_analysis_path("house"), class: "btn btn--secondary flex items-center gap-1", data: { turbo_frame: "modal" } do %>
+          <%= lucide_icon("home", class: "w-5 h-5") %>
+          <p class="text-sm font-medium">House Calculator</p>
+        <% end %>
+        <%= link_to affordability_analysis_path("vacation"), class: "btn btn--secondary flex items-center gap-1", data: { turbo_frame: "modal" } do %>
+          <%= lucide_icon("plane", class: "w-5 h-5") %>
+          <p class="text-sm font-medium">Vacation Calculator</p>
+        <% end %>
+      </div>
+      <%= link_to simulate_scenarios_path, class: "btn btn--primary flex items-center gap-1" do %>
+        <%= lucide_icon("sparkles", class: "w-5 h-5") %>
+        <p class="text-sm font-medium">New Scenario</p>
+      <% end %>
+    </div>
+  </header>
+
+  <% if @scenarios.empty? %>
+    <div class="bg-white shadow-xs border border-alpha-black-25 rounded-xl p-8">
+      <div class="flex justify-center items-center py-12">
+        <div class="text-center flex flex-col items-center max-w-[500px]">
+          <p class="text-primary mb-4 font-medium">Create your first What-If scenario</p>
+          <p class="text-sm text-secondary mb-6">Simulate different financial scenarios to help plan your future. Adjust income, expenses, and savings rate to see potential outcomes.</p>
+          <%= link_to simulate_scenarios_path, class: "btn btn--primary flex items-center gap-2" do %>
+            <%= lucide_icon("sparkles", class: "w-5 h-5") %>
+            <span>Create Scenario</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-white shadow-xs border border-alpha-black-25 rounded-xl p-4">
+      <div class="rounded-xl bg-gray-25 space-y-1 p-1">
+        <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">
+          <p>Scenarios</p>
+          <span class="text-subdued">&middot;</span>
+          <p><%= @scenarios.count %></p>
+        </div>
+
+        <div class="border border-alpha-black-25 rounded-md bg-white shadow-xs">
+          <div class="overflow-hidden rounded-md">
+            <%= render @scenarios %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div> 

@@ -1,0 +1,19 @@
+<%# locals: (analysis:) %>
+<% if analysis[:improvement_steps].present? %>
+  <div class="border-b pb-4">
+    <h3 class="font-medium text-primary mb-2">Required Steps</h3>
+    <div class="space-y-2">
+      <% analysis[:improvement_steps].each do |step| %>
+        <div class="bg-gray-50 p-3 rounded">
+          <p class="text-sm font-medium"><%= step[:title] %></p>
+          <p class="text-sm text-gray-600"><%= step[:description] %></p>
+          <p class="text-sm text-gray-600 mt-1">
+            <strong>Impact:</strong> <%= step[:impact] %><br>
+            <strong>Timeline:</strong> <%= step[:timeline] %><br>
+            <strong>Priority:</strong> <%= step[:priority]&.titleize %>
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %> 

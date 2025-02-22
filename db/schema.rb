@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
+ActiveRecord::Schema[7.2].define(version: 2025_02_19_232329) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -101,7 +101,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
     t.decimal "balance", precision: 19, scale: 4
     t.string "currency"
     t.boolean "is_active", default: true, null: false
-    t.virtual "classification", type: :string, as: "\nCASE\n    WHEN ((accountable_type)::text = ANY ((ARRAY['Loan'::character varying, 'CreditCard'::character varying, 'OtherLiability'::character varying])::text[])) THEN 'liability'::text\n    ELSE 'asset'::text\nEND", stored: true
+    t.virtual "classification", type: :string, as: "\nCASE\n    WHEN ((accountable_type)::text = ANY (ARRAY[('Loan'::character varying)::text, ('CreditCard'::character varying)::text, ('OtherLiability'::character varying)::text])) THEN 'liability'::text\n    ELSE 'asset'::text\nEND", stored: true
     t.uuid "import_id"
     t.uuid "plaid_account_id"
     t.boolean "scheduled_for_deletion", default: false
@@ -157,6 +157,35 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["addressable_type", "addressable_id"], name: "index_addresses_on_addressable"
+  end
+
+  create_table "ai_recommendations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "family_id", null: false
+    t.string "recommendation_type", null: false
+    t.string "status", default: "pending", null: false
+    t.string "title", null: false
+    t.text "description", null: false
+    t.integer "amount_cents"
+    t.string "currency"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["family_id", "recommendation_type"], name: "index_ai_recommendations_on_family_id_and_recommendation_type"
+    t.index ["family_id", "status"], name: "index_ai_recommendations_on_family_id_and_status"
+    t.index ["family_id"], name: "index_ai_recommendations_on_family_id"
+    t.check_constraint "recommendation_type::text = ANY (ARRAY['spending_analysis'::character varying, 'budget_adjustment'::character varying, 'savings_opportunity'::character varying]::text[])"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'dismissed'::character varying]::text[])"
+  end
+
+  create_table "analysis_statuses", force: :cascade do |t|
+    t.uuid "family_id", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "goal_type", null: false
+    t.json "results"
+    t.string "current_step"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["family_id", "goal_type"], name: "index_analysis_statuses_on_family_id_and_goal_type"
+    t.index ["family_id"], name: "index_analysis_statuses_on_family_id"
   end
 
   create_table "budget_categories", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -542,6 +571,19 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
     t.index ["outflow_transaction_id"], name: "index_rejected_transfers_on_outflow_transaction_id"
   end
 
+  create_table "scenarios", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "family_id", null: false
+    t.string "name"
+    t.text "description"
+    t.decimal "income_adjustment"
+    t.decimal "expense_adjustment"
+    t.decimal "savings_rate"
+    t.integer "timeline_months"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["family_id"], name: "index_scenarios_on_family_id"
+  end
+
   create_table "securities", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "ticker", null: false
     t.string "name"
@@ -700,6 +742,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
   add_foreign_key "accounts", "plaid_accounts"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "ai_recommendations", "families"
+  add_foreign_key "analysis_statuses", "families"
   add_foreign_key "budget_categories", "budgets"
   add_foreign_key "budget_categories", "categories"
   add_foreign_key "budgets", "families"
@@ -716,6 +760,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_12_163624) do
   add_foreign_key "plaid_items", "families"
   add_foreign_key "rejected_transfers", "account_transactions", column: "inflow_transaction_id"
   add_foreign_key "rejected_transfers", "account_transactions", column: "outflow_transaction_id"
+  add_foreign_key "scenarios", "families"
   add_foreign_key "security_prices", "securities"
   add_foreign_key "sessions", "impersonation_sessions", column: "active_impersonator_session_id"
   add_foreign_key "sessions", "users"

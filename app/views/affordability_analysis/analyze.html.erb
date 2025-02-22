@@ -1,0 +1,57 @@
+<%# House Affordability Analysis %>
+<%= turbo_stream_from @analysis_status %>
+
+<div class="space-y-6">
+  <% if params[:goal_type] == "house" %>
+    <header class="p-6 pb-0">
+      <div class="flex items-center gap-2">
+        <%= lucide_icon "home", class: "w-6 h-6 text-primary" %>
+        <h2 class="text-xl font-medium text-primary">Home Buying Power Analysis</h2>
+      </div>
+    </header>
+
+    <div id="analysis_content" class="p-6">
+      <% if @analysis_status.status != "completed" %>
+        <%# Loading State %>
+        <div class="py-12">
+          <div class="flex flex-col items-center justify-center gap-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p id="analysis_status" class="text-sm text-secondary">
+              <%= @analysis_status.current_step %>
+            </p>
+          </div>
+        </div>
+      <% else %>
+        <%= render "affordability_analysis/results", 
+                  analysis: @analysis_status.results,
+                  goal_type: @analysis_status.goal_type %>
+      <% end %>
+    </div>
+
+  <% else %>
+    <header class="p-6 pb-0">
+      <div class="flex items-center gap-2">
+        <%= lucide_icon "plane", class: "w-6 h-6 text-primary" %>
+        <h2 class="text-xl font-medium text-primary">Vacation Budget Analysis</h2>
+      </div>
+    </header>
+
+    <div id="analysis_content" class="p-6">
+      <% if @analysis_status.status != "completed" %>
+        <%# Loading State %>
+        <div class="py-12">
+          <div class="flex flex-col items-center justify-center gap-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p id="analysis_status" class="text-sm text-secondary">
+              <%= @analysis_status.current_step %>
+            </p>
+          </div>
+        </div>
+      <% else %>
+        <%= render "affordability_analysis/results", 
+                  analysis: @analysis_status.results,
+                  goal_type: @analysis_status.goal_type %>
+      <% end %>
+    </div>
+  <% end %>
+</div> 

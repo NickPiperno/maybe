@@ -1,0 +1,45 @@
+<%# locals: (scenario:) %>
+
+<div id="<%= dom_id(scenario) %>" class="flex justify-between items-center px-4 py-4 bg-white">
+  <div class="flex items-center gap-4">
+    <div class="w-10 h-10 rounded-full bg-gray-25 flex justify-center items-center">
+      <%= lucide_icon "sparkles", class: "w-6 h-6 text-secondary" %>
+    </div>
+    
+    <div class="space-y-1">
+      <h3 class="text-primary font-medium"><%= scenario.name %></h3>
+      <p class="text-sm text-secondary"><%= scenario.description %></p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div class="text-right">
+      <div class="flex items-center gap-2">
+        <% if scenario.income_adjustment %>
+          <span class="text-sm text-secondary">Income:</span>
+          <span class="text-sm font-medium <%= scenario.income_adjustment >= 0 ? 'text-green-500' : 'text-red-500' %>">
+            <%= number_to_percentage(scenario.income_adjustment, precision: 1) %>
+          </span>
+        <% end %>
+      </div>
+      <div class="flex items-center gap-2">
+        <% if scenario.expense_adjustment %>
+          <span class="text-sm text-secondary">Expenses:</span>
+          <span class="text-sm font-medium <%= scenario.expense_adjustment <= 0 ? 'text-green-500' : 'text-red-500' %>">
+            <%= number_to_percentage(scenario.expense_adjustment, precision: 1) %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+
+    <%= contextual_menu do %>
+      <div class="w-48 p-1 text-sm leading-6 text-primary bg-white shadow-lg shrink rounded-xl ring-1 ring-gray-900/5">
+        <%= link_to scenario_path(scenario), class: "flex items-center rounded-lg text-primary hover:bg-gray-50 py-2 px-3 gap-2" do %>
+          <%= lucide_icon "eye", class: "shrink-0 w-5 h-5 text-secondary" %>
+          <span class="text-sm">View Results</span>
+        <% end %>
+        <%= contextual_menu_destructive_item "Delete", scenario_path(scenario) %>
+      </div>
+    <% end %>
+  </div>
+</div> 

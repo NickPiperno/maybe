@@ -167,6 +167,29 @@ module ApplicationHelper
     cookies[:admin] == "true"
   end
 
+  def hex_to_tailwind_color(hex)
+    case hex&.downcase
+    # Income & Expense Categories
+    when "#e99537" then "orange-500"  # Income, Shopping
+    when "#4da568" then "emerald-500"  # Healthcare
+    when "#6471eb" then "blue-500"  # Housing, Insurance
+    when "#db5a54" then "red-500"  # Utilities
+    when "#df4e92" then "pink-500"  # Entertainment, Transportation
+    when "#c44fe9" then "purple-500"  # Custom color
+    when "#eb5429" then "red-600"  # Food & Drink, Education
+    when "#61c9ea" then "sky-500"  # Gifts & Donations
+    when "#805dee" then "violet-500"  # Subscriptions
+    when "#6ad28a" then "green-500"  # Custom color
+    # Special Categories
+    when "#737373" then "gray-500"  # UNCATEGORIZED_COLOR
+    when "#444ce7" then "indigo-600"  # TRANSFER_COLOR
+    when nil then "gray-500"  # Handle nil case
+    else
+      Rails.logger.debug "Unknown category color: #{hex}"
+      "gray-500"  # Default fallback
+    end
+  end
+
   private
 
     def calculate_total(item, money_method, negate)

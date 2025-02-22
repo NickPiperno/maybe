@@ -1,0 +1,57 @@
+<div class="space-y-4">
+  <header class="flex justify-between items-center text-primary font-medium">
+    <h1 class="text-xl">Create What-If Scenario</h1>
+  </header>
+
+  <div class="bg-white shadow-xs border border-alpha-black-25 rounded-xl p-6">
+    <%= form_with model: @scenario, class: "space-y-6" do |form| %>
+      <div class="space-y-4">
+        <div>
+          <%= form.label :name, class: "block text-sm font-medium text-primary mb-1" %>
+          <%= form.text_field :name, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", placeholder: "e.g., Increased Savings Plan" %>
+        </div>
+
+        <div>
+          <%= form.label :description, class: "block text-sm font-medium text-primary mb-1" %>
+          <%= form.text_area :description, rows: 3, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", 
+              placeholder: "Describe the scenario and its goals..." %>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h2 class="text-lg font-medium text-primary">Adjustments</h2>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= form.label :income_adjustment, "Income Change (%)", class: "block text-sm font-medium text-primary mb-1" %>
+            <%= form.number_field :income_adjustment, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", 
+                step: "0.1", placeholder: "e.g., 5 for 5% increase" %>
+          </div>
+
+          <div>
+            <%= form.label :expense_adjustment, "Expense Change (%)", class: "block text-sm font-medium text-primary mb-1" %>
+            <%= form.number_field :expense_adjustment, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", 
+                step: "0.1", placeholder: "e.g., -10 for 10% decrease" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :savings_rate, "Target Savings Rate (%)", class: "block text-sm font-medium text-primary mb-1" %>
+          <%= form.number_field :savings_rate, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", 
+              min: "0", max: "100", step: "0.1", placeholder: "e.g., 20 for 20% savings rate" %>
+        </div>
+
+        <div>
+          <%= form.label :timeline_months, "Timeline (months)", class: "block text-sm font-medium text-primary mb-1" %>
+          <%= form.number_field :timeline_months, class: "w-full rounded-lg border-alpha-black-25 shadow-xs", 
+              min: "1", max: "60", placeholder: "e.g., 12 for one year" %>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <%= link_to "Cancel", scenarios_path, class: "btn btn--secondary" %>
+        <%= form.submit "Create Scenario", class: "btn btn--primary" %>
+      </div>
+    <% end %>
+  </div>
+</div> 

@@ -29,6 +29,9 @@ class Family < ApplicationRecord
   has_many :plaid_items, dependent: :destroy
   has_many :budgets, dependent: :destroy
   has_many :budget_categories, through: :budgets
+  has_many :ai_recommendations, dependent: :destroy
+  has_many :scenarios, dependent: :destroy
+  has_many :analysis_statuses, dependent: :destroy
 
   validates :locale, inclusion: { in: I18n.available_locales.map(&:to_s) }
   validates :date_format, inclusion: { in: DATE_FORMATS.map(&:last) }
@@ -173,12 +176,12 @@ class Family < ApplicationRecord
 
       income << {
         date: r.date,
-        value: Money.new(r.rolling_income, self.currency)
+        value: Money.new(r.rolling_income.abs, self.currency)
       }
 
       savings << {
         date: r.date,
-        value: r.rolling_income != 0 ? ((r.rolling_income - r.rolling_spend) / r.rolling_income) : 0.to_d
+        value: r.rolling_income.abs != 0 ? ((r.rolling_income.abs - r.rolling_spend) / r.rolling_income.abs) : 0.to_d
       }
     end
 

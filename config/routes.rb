@@ -200,4 +200,30 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "pages#dashboard"
+
+  resources :ai_recommendations, only: [] do
+    member do
+      post :accept
+      post :dismiss
+    end
+    collection do
+      post :refresh
+    end
+  end
+
+  resources :scenarios do
+    collection do
+      get :simulate
+    end
+  end
+
+  # Affordability Analysis routes
+  get "affordability/:goal_type", to: "affordability_analysis#analyze", as: :affordability_analysis
+  get "affordability_analysis/:id/results", to: "affordability_analysis#results", as: :affordability_analysis_results
+
+  resource :affordability_analysis, only: [:new, :create] do
+    member do
+      get :results
+    end
+  end
 end

@@ -1,0 +1,247 @@
+<div class="space-y-4">
+  <header class="flex justify-between items-center text-primary font-medium">
+    <div class="flex items-center gap-4">
+      <%= link_to scenarios_path, class: "text-secondary hover:text-primary" do %>
+        <%= lucide_icon "chevron-left", class: "w-5 h-5" %>
+      <% end %>
+      <h1 class="text-xl"><%= @scenario.name %></h1>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div class="bg-white shadow-xs border border-alpha-black-25 rounded-xl p-6">
+      <h2 class="text-lg font-medium text-primary mb-4">Scenario Details</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <h3 class="text-sm font-medium text-secondary">Description</h3>
+          <p class="text-primary"><%= @scenario.description %></p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <% if @scenario.income_adjustment %>
+            <div>
+              <h3 class="text-sm font-medium text-secondary">Income Adjustment</h3>
+              <p class="text-lg font-medium <%= @scenario.income_adjustment >= 0 ? 'text-green-500' : 'text-red-500' %>">
+                <%= number_to_percentage(@scenario.income_adjustment, precision: 1) %>
+              </p>
+            </div>
+          <% end %>
+
+          <% if @scenario.expense_adjustment %>
+            <div>
+              <h3 class="text-sm font-medium text-secondary">Expense Adjustment</h3>
+              <p class="text-lg font-medium <%= @scenario.expense_adjustment <= 0 ? 'text-green-500' : 'text-red-500' %>">
+                <%= number_to_percentage(@scenario.expense_adjustment, precision: 1) %>
+              </p>
+            </div>
+          <% end %>
+
+          <% if @scenario.savings_rate %>
+            <div>
+              <h3 class="text-sm font-medium text-secondary">Target Savings Rate</h3>
+              <p class="text-lg font-medium text-primary">
+                <%= number_to_percentage(@scenario.savings_rate, precision: 1) %>
+              </p>
+            </div>
+          <% end %>
+
+          <div>
+            <h3 class="text-sm font-medium text-secondary">Timeline</h3>
+            <p class="text-lg font-medium text-primary">
+              <%= pluralize(@scenario.timeline_months, 'month') %>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-xs border border-alpha-black-25 rounded-xl p-6">
+      <h2 class="text-lg font-medium text-primary mb-4">Simulation Results</h2>
+      
+      <% simulation = @scenario.simulate %>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h3 class="text-sm font-medium text-secondary">Total Savings</h3>
+            <p class="text-lg font-medium text-primary">
+              <%= number_to_currency(simulation[:summary][:total_savings]) %>
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-secondary">Average Savings Rate</h3>
+            <p class="text-lg font-medium text-primary">
+              <%= number_to_percentage(simulation[:summary][:average_savings_rate], precision: 1) %>
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-secondary">Final Monthly Savings</h3>
+            <p class="text-lg font-medium text-primary">
+              <%= number_to_currency(simulation[:summary][:final_monthly_savings]) %>
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-secondary">Final Savings Rate</h3>
+            <p class="text-lg font-medium text-primary">
+              <%= number_to_percentage(simulation[:summary][:final_savings_rate], precision: 1) %>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if simulation[:analysis].present? %>
+    <div class="mt-4 bg-white shadow-xs border border-alpha-black-25 rounded-xl p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <%= lucide_icon "sparkles", class: "w-5 h-5 text-primary" %>
+        <h2 class="text-lg font-medium text-primary">AI Analysis</h2>
+      </div>
+
+      <div class="space-y-6">
+        <div class="flex items-center gap-4">
+          <div class="flex-1">
+            <h3 class="text-sm font-medium text-secondary mb-2">Feasibility Assessment</h3>
+            <p class="text-primary"><%= simulation[:analysis][:summary] %></p>
+          </div>
+          <div class="w-24 h-24 relative">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-2xl font-bold text-primary"><%= simulation[:analysis][:feasibility_score] %></span>
+            </div>
+            <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+              <path
+                d="M18 2.0845
+                  a 15.9155 15.9155 0 0 1 0 31.831
+                  a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none"
+                stroke="#E5E7EB"
+                stroke-width="3"
+              />
+              <path
+                d="M18 2.0845
+                  a 15.9155 15.9155 0 0 1 0 31.831
+                  a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none"
+                stroke="<%= simulation[:analysis][:feasibility_score] >= 70 ? '#10B981' : '#EF4444' %>"
+                stroke-width="3"
+                stroke-dasharray="<%= simulation[:analysis][:feasibility_score] %>, 100"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <% if simulation[:analysis][:recommendations].present? %>
+          <div>
+            <h3 class="text-sm font-medium text-secondary mb-3">Recommendations</h3>
+            <div class="space-y-3">
+              <% simulation[:analysis][:recommendations].each do |rec| %>
+                <div class="p-3 bg-gray-25 rounded-xl">
+                  <div class="flex items-start gap-3">
+                    <%= lucide_icon case rec[:type]
+                      when 'income' then 'trending-up'
+                      when 'expense' then 'trending-down'
+                      else 'piggy-bank'
+                      end, 
+                      class: "w-5 h-5 text-primary mt-0.5" %>
+                    <div>
+                      <h4 class="text-sm font-medium text-primary mb-1"><%= rec[:title] %></h4>
+                      <p class="text-sm text-secondary mb-1"><%= rec[:description] %></p>
+                      <p class="text-sm text-primary"><strong>Impact:</strong> <%= rec[:impact] %></p>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if simulation[:analysis][:risks].present? %>
+          <div>
+            <h3 class="text-sm font-medium text-secondary mb-3">Potential Risks</h3>
+            <div class="space-y-3">
+              <% simulation[:analysis][:risks].each do |risk| %>
+                <div class="p-3 bg-gray-25 rounded-xl">
+                  <div class="flex items-start gap-3">
+                    <%= lucide_icon "alert-triangle", class: "w-5 h-5 text-orange-500 mt-0.5" %>
+                    <div>
+                      <h4 class="text-sm font-medium text-primary mb-1"><%= risk[:title] %></h4>
+                      <p class="text-sm text-secondary mb-1"><%= risk[:description] %></p>
+                      <p class="text-sm text-primary"><strong>Mitigation:</strong> <%= risk[:mitigation] %></p>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="mt-4 bg-white shadow-xs border border-alpha-black-25 rounded-xl p-6">
+    <h2 class="text-lg font-medium text-primary mb-4">Monthly Projections</h2>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="text-left text-sm font-medium text-secondary">
+            <th class="pb-2">Month</th>
+            <th class="pb-2">Income</th>
+            <th class="pb-2">Expenses</th>
+            <th class="pb-2">Savings</th>
+            <th class="pb-2">Savings Rate</th>
+            <th class="pb-2">Progress</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          <% simulation[:monthly_projections].each do |projection| %>
+            <tr class="border-t border-alpha-black-25">
+              <td class="py-2"><%= projection[:month] %></td>
+              <td class="py-2">
+                <%= number_to_currency(projection[:income]) %>
+                <% if projection[:trends][:income_growth] != 0 %>
+                  <span class="text-xs ml-1 <%= projection[:trends][:income_growth] > 0 ? 'text-green-500' : 'text-red-500' %>">
+                    <%= projection[:trends][:income_growth] > 0 ? '↑' : '↓' %>
+                    <%= number_to_percentage(projection[:trends][:income_growth].abs, precision: 1) %>
+                  </span>
+                <% end %>
+              </td>
+              <td class="py-2">
+                <%= number_to_currency(projection[:expenses]) %>
+                <% if projection[:trends][:expense_reduction] != 0 %>
+                  <span class="text-xs ml-1 <%= projection[:trends][:expense_reduction] > 0 ? 'text-green-500' : 'text-red-500' %>">
+                    <%= projection[:trends][:expense_reduction] > 0 ? '↓' : '↑' %>
+                    <%= number_to_percentage(projection[:trends][:expense_reduction].abs, precision: 1) %>
+                  </span>
+                <% end %>
+              </td>
+              <td class="py-2">
+                <span class="<%= projection[:savings] >= 0 ? 'text-green-500' : 'text-red-500' %>">
+                  <%= number_to_currency(projection[:savings]) %>
+                </span>
+              </td>
+              <td class="py-2">
+                <span class="<%= projection[:savings_rate] >= @scenario.savings_rate.to_f ? 'text-green-500' : 'text-secondary' %>">
+                  <%= number_to_percentage(projection[:savings_rate], precision: 1) %>
+                </span>
+              </td>
+              <td class="py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full" style="width: <%= projection[:month].to_f / @scenario.timeline_months * 100 %>%"></div>
+                  </div>
+                  <span class="text-xs text-secondary">
+                    <%= number_to_percentage(projection[:month].to_f / @scenario.timeline_months * 100, precision: 0) %>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> 

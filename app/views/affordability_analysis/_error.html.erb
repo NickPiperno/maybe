@@ -1,0 +1,14 @@
+<%# locals: (message:) %>
+<div class="bg-gray-25 rounded-xl p-6 text-center">
+  <div class="flex flex-col items-center gap-3">
+    <%= lucide_icon "alert-circle", class: "w-8 h-8 text-orange-500" %>
+    <div class="space-y-1">
+      <h3 class="font-medium text-primary">Analysis Error</h3>
+      <p class="text-sm text-secondary"><%= message %></p>
+    </div>
+    <%= link_to scenarios_path, class: "btn btn--secondary mt-4" do %>
+      <%= lucide_icon "sparkles", class: "w-5 h-5" %>
+      <span>Create a Savings Scenario</span>
+    <% end %>
+  </div>
+</div> 

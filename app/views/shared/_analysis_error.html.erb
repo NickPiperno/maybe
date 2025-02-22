@@ -1,0 +1,14 @@
+<%# Analysis error message partial %>
+<div class="bg-red-50 rounded-xl p-6 text-center">
+  <div class="flex flex-col items-center gap-3">
+    <%= lucide_icon "alert-triangle", class: "w-8 h-8 text-red-500" %>
+    <div class="space-y-1">
+      <h3 class="font-medium text-red-700">Analysis Failed</h3>
+      <p class="text-sm text-red-600"><%= message %></p>
+    </div>
+    <button onclick="window.location.reload()" class="btn btn--secondary mt-4">
+      <%= lucide_icon "refresh-cw", class: "w-5 h-5" %>
+      <span>Try Again</span>
+    </button>
+  </div>
+</div> 

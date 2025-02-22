@@ -17,7 +17,7 @@ class BudgetingStats
     def income_expense_totals_query(type_scope)
       monthly_totals = family.entries
                         .merge(type_scope)
-                        .select("SUM(account_entries.amount) as total")
+                        .select("ABS(SUM(account_entries.amount)) as total")
                         .group(Arel.sql("date_trunc('month', account_entries.date)"))
 
       result = Family.select("AVG(mt.total)")

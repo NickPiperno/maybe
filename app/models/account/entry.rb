@@ -18,7 +18,7 @@ class Account::Entry < ApplicationRecord
 
   scope :chronological, -> {
     order(
-      date: :asc,
+      'account_entries.date' => :asc,
       Arel.sql("CASE WHEN account_entries.entryable_type = 'Account::Valuation' THEN 1 ELSE 0 END") => :asc,
       created_at: :asc
     )
@@ -30,7 +30,7 @@ class Account::Entry < ApplicationRecord
 
   scope :reverse_chronological, -> {
     order(
-      date: :desc,
+      'account_entries.date' => :desc,
       Arel.sql("CASE WHEN account_entries.entryable_type = 'Account::Valuation' THEN 1 ELSE 0 END") => :desc,
       created_at: :desc
     )
@@ -117,25 +117,27 @@ class Account::Entry < ApplicationRecord
         "COALESCE(SUM(-converted_amount) FILTER (WHERE converted_amount < 0), 0) AS income"
       )
         .from(entries.with_converted_amount(currency), :e)
-        .joins(sanitize_sql([ "RIGHT JOIN generate_series(?, ?, interval '1 day') AS gs(date) ON e.date = gs.date", period.date_range.first, period.date_range.last ]))
+        .joins(sanitize_sql([
+          "RIGHT JOIN generate_series(?, ?, interval '1 day') AS gs(date) ON e.date = gs.date",
+          period.date_range.first,
+          period.date_range.last
+        ]))
         .group("gs.date")
     end
 
     def daily_rolling_totals(entries, currency, period: Period.last_30_days)
-      # Extend the period to include the rolling window
-      period_with_rolling = period.extend_backward(period.date_range.count.days)
-
-      # Aggregate the rolling sum of spending and income based on daily totals
-      rolling_totals = from(daily_totals(entries, currency, period: period_with_rolling))
+      # Get the daily totals for just the period we want
+      rolling_totals = from(daily_totals(entries, currency, period: period))
                          .select(
                            "*",
-                           sanitize_sql_array([ "SUM(spending) OVER (ORDER BY date RANGE BETWEEN INTERVAL ? PRECEDING AND CURRENT ROW) as rolling_spend", "#{period.date_range.count} days" ]),
-                           sanitize_sql_array([ "SUM(income) OVER (ORDER BY date RANGE BETWEEN INTERVAL ? PRECEDING AND CURRENT ROW) as rolling_income", "#{period.date_range.count} days" ])
+                           # Use ROWS BETWEEN to avoid multiplication effect
+                           sanitize_sql_array([ "SUM(spending) OVER (ORDER BY date ROWS BETWEEN ? PRECEDING AND CURRENT ROW) as rolling_spend", period.date_range.count - 1 ]),
+                           sanitize_sql_array([ "SUM(income) OVER (ORDER BY date ROWS BETWEEN ? PRECEDING AND CURRENT ROW) as rolling_income", period.date_range.count - 1 ])
                          )
                          .order(:date)
 
-      # Trim the results to the original period
-      select("*").from(rolling_totals).where("date >= ?", period.date_range.first)
+      # Return all results since we're already limited to the period we want
+      select("*").from(rolling_totals)
     end
 
     def bulk_update!(bulk_update_params)

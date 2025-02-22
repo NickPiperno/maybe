@@ -1,0 +1,91 @@
+<%# locals: (recommendations:) %>
+<div class="bg-white p-3 border border-alpha-black-25 shadow-xs rounded-xl">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2">
+      <%= lucide_icon "sparkles", class: "w-5 h-5 text-primary" %>
+      <h2 class="text-lg font-medium text-primary">AI Recommendations</h2>
+    </div>
+    <div class="flex items-center gap-2">
+      <% if recommendations.any? %>
+        <span class="text-xs text-secondary">Updated <%= time_ago_in_words(recommendations.first.created_at) %> ago</span>
+      <% end %>
+      <%= button_to refresh_ai_recommendations_path, method: :post, class: "hover:text-primary", title: "Generate new recommendations" do %>
+        <%= lucide_icon "refresh-cw", class: "w-4 h-4 text-secondary hover:text-primary cursor-pointer" %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="space-y-3">
+    <% if recommendations.empty? %>
+      <div class="p-6 text-center">
+        <p class="text-secondary text-sm mb-3">No active recommendations available.</p>
+        <%= button_to refresh_ai_recommendations_path, method: :post, class: "btn btn--primary text-xs" do %>
+          Generate Recommendations
+        <% end %>
+      </div>
+    <% else %>
+      <%# Spending Analysis %>
+      <% if spending_rec = recommendations.find_by(recommendation_type: 'spending_analysis') %>
+        <div class="p-3 bg-gray-25 rounded-xl">
+          <div class="flex items-start gap-3">
+            <%= lucide_icon "bar-chart-2", class: "w-5 h-5 text-primary mt-0.5" %>
+            <div class="w-full">
+              <h3 class="text-sm font-medium text-primary mb-1"><%= spending_rec.title %></h3>
+              <p class="text-sm text-secondary mb-2"><%= spending_rec.description %></p>
+              <div class="flex items-center justify-end gap-2">
+                <%= button_to dismiss_ai_recommendation_path(spending_rec), method: :post, class: "btn btn--outline text-xs py-1" do %>
+                  Dismiss
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Savings Opportunity %>
+      <% if savings_rec = recommendations.find_by(recommendation_type: 'savings_opportunity') %>
+        <div class="p-3 bg-gray-25 rounded-xl">
+          <div class="flex items-start gap-3">
+            <%= lucide_icon "piggy-bank", class: "w-5 h-5 text-blue-500 mt-0.5" %>
+            <div class="w-full">
+              <h3 class="text-sm font-medium text-primary mb-1"><%= savings_rec.title %></h3>
+              <p class="text-sm text-secondary mb-2"><%= savings_rec.description %></p>
+              <% if savings_rec.amount.present? %>
+                <p class="text-sm text-secondary mb-2">Suggested monthly savings: <%= format_money(savings_rec.amount) %></p>
+              <% end %>
+              <div class="flex items-center justify-end gap-2">
+                <%= button_to dismiss_ai_recommendation_path(savings_rec), method: :post, class: "btn btn--outline text-xs py-1" do %>
+                  Dismiss
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Budget Recommendation %>
+      <% if budget_rec = recommendations.find_by(recommendation_type: 'budget_adjustment') %>
+        <div class="p-3 bg-gray-25 rounded-xl">
+          <div class="flex items-start gap-3">
+            <%= lucide_icon "wallet", class: "w-5 h-5 text-orange-500 mt-0.5" %>
+            <div class="w-full">
+              <h3 class="text-sm font-medium text-primary mb-1"><%= budget_rec.title %></h3>
+              <p class="text-sm text-secondary mb-2"><%= budget_rec.description %></p>
+              <% if budget_rec.amount.present? %>
+                <p class="text-sm text-secondary mb-2">Suggested adjustment: <%= format_money(budget_rec.amount) %></p>
+              <% end %>
+              <div class="flex items-center justify-end gap-2">
+                <%= button_to dismiss_ai_recommendation_path(budget_rec), method: :post, class: "btn btn--outline text-xs py-1" do %>
+                  Dismiss
+                <% end %>
+                <%= link_to budget_path(Current.family.budgets.order(created_at: :desc).first || Current.family.budgets.new), class: "btn btn--primary text-xs py-1" do %>
+                  Adjust Budget
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -56,11 +56,19 @@
             start_date: @period.date_range.begin,
             end_date: @period.date_range.end
           ).category_totals.sort_by(&:amount_money).reverse.first(5).map { |ct|
+            Rails.logger.debug "Category Debug:"
+            Rails.logger.debug "  Name: #{ct.category&.name}"
+            Rails.logger.debug "  Original Color: #{ct.category&.color.inspect}"
+            color = hex_to_tailwind_color(ct.category&.color)
+            Rails.logger.debug "  Tailwind Color: #{color}"
+            Rails.logger.debug "  Is Category nil?: #{ct.category.nil?}"
+            Rails.logger.debug "  Category Attributes: #{ct.category&.attributes}"
             {
-              label: ct.category.name,
+              label: ct.category&.name || "Uncategorized",
               percent_of_total: ct.percentage.round(1),
               formatted_value: format_money(ct.amount_money),
-              color: ct.category.color
+              fill_color: ct.category ? "fill-#{color}" : "fill-gray-500",
+              bg_color: ct.category ? "bg-#{color}" : "bg-gray-500"
             }
           }.to_json %>'
           data-pie-chart-total-value="<%= format_money(Money.new(@totals.expense_total, @totals.currency)) %>"
@@ -74,7 +82,7 @@
           <% category_data.each do |category_total| %>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full" style="background-color: <%= category_total.category.color %>"></div>
+                <div class="w-2 h-2 rounded-full bg-<%= hex_to_tailwind_color(category_total.category.color) %>"></div>
                 <span class="text-sm text-secondary"><%= category_total.category.name %></span>
               </div>
               <span class="text-sm font-medium text-primary">

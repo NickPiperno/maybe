@@ -23,6 +23,27 @@ class PagesController < ApplicationController
     @account_groups = @accounts.by_group(period: @period, currency: Current.family.currency)
     @transaction_entries = Current.family.entries.incomes_and_expenses.limit(6).reverse_chronological
 
+    # Debug statements
+    Rails.logger.debug "Current family: #{Current.family.inspect}"
+    Rails.logger.debug "Family has ai_recommendations? #{Current.family.respond_to?(:ai_recommendations)}"
+    
+    begin
+      # Fetch active AI recommendations
+      @recommendations = Current.family.ai_recommendations.active.order(created_at: :desc)
+      Rails.logger.debug "Recommendations found: #{@recommendations.inspect}"
+      
+      # Generate new recommendations if none exist
+      if @recommendations.empty?
+        Rails.logger.debug "No recommendations found, generating new ones"
+        @recommendations = AiRecommendation.generate_recommendations(Current.family)
+        Rails.logger.debug "Generated recommendations: #{@recommendations.inspect}"
+      end
+    rescue => e
+      Rails.logger.error "Error in AI recommendations: #{e.class} - #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      @recommendations = []
+    end
+
     # TODO: Placeholders for trendlines
     placeholder_series_data = 10.times.map do |i|
       { date: Date.current - i.days, value: Money.new(0, Current.family.currency) }

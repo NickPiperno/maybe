@@ -1,0 +1,151 @@
+<%# locals: (analysis:) %>
+<div class="border-b pb-4">
+  <% if analysis[:scenarios_analysis].present? %>
+    <%# House Analysis %>
+    <h3 class="font-medium text-primary mb-2">Scenarios Analysis</h3>
+    
+    <%# Show each scenario analysis %>
+    <div class="space-y-4">
+      <% analysis[:scenarios_analysis].each do |scenario| %>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <h4 class="font-medium"><%= scenario[:down_payment_percentage].to_s.gsub('%', '') %>% Down Payment Option</h4>
+              <% if scenario[:is_viable_now] %>
+                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Viable Now</span>
+              <% else %>
+                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">Needs Work</span>
+              <% end %>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <% house_price = scenario[:house_price].to_s.gsub(/[$,]/, '').to_f %>
+              <% down_payment_percent = scenario[:down_payment_percentage].to_s.gsub('%', '').to_f %>
+              <p><strong>House Price:</strong> <%= number_to_currency(house_price) %></p>
+              <p><strong>Down Payment:</strong> <%= number_to_currency(house_price * (down_payment_percent / 100)) %></p>
+              <p><strong>Monthly Payment:</strong> <%= number_to_currency(scenario[:monthly_payment].to_s.gsub(/[$,]/, '').to_f) %></p>
+            </div>
+            
+            <p class="text-sm"><%= scenario[:viability_explanation] %></p>
+            
+            <% if scenario[:required_steps].present? %>
+              <div class="mt-2">
+                <p class="text-sm font-medium mb-1">Required Steps:</p>
+                <ul class="list-disc list-inside text-sm space-y-1">
+                  <% scenario[:required_steps].each do |step| %>
+                    <li>
+                      <% target_value = step[:target].to_s.gsub(/[$,]/, '').to_f %>
+                      <% if target_value > 0 %>
+                        <%= step[:step] %> - Target: <%= number_to_currency(target_value) %>
+                      <% else %>
+                        <%= step[:step] %>
+                      <% end %>
+                      <span class="text-xs text-gray-500">(<%= step[:timeline] %>)</span>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <div>
+                <p class="text-sm font-medium text-green-700 mb-1">Pros:</p>
+                <ul class="list-disc list-inside text-sm space-y-1">
+                  <% scenario[:pros].each do |pro| %>
+                    <li class="text-gray-600"><%= pro %></li>
+                  <% end %>
+                </ul>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-red-700 mb-1">Cons:</p>
+                <ul class="list-disc list-inside text-sm space-y-1">
+                  <% scenario[:cons].each do |con| %>
+                    <li class="text-gray-600"><%= con %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <%# Show recommended scenario only if there's a viable recommendation %>
+    <% 
+      recommended = analysis.dig(:recommended_scenario)
+      house_price = recommended&.dig(:house_price)&.to_s&.gsub(/[$,]/, '')&.to_f || 0
+      monthly_payment = recommended&.dig(:monthly_payment)&.to_s&.gsub(/[$,]/, '')&.to_f || 0
+      has_viable_recommendation = recommended && 
+                               recommended[:house_price] != "Not applicable" && 
+                               house_price > 0 &&
+                               monthly_payment > 0
+    %>
+    <% if has_viable_recommendation %>
+      <div class="mt-6">
+        <h4 class="font-medium text-primary mb-2">Recommended Approach</h4>
+        <div class="bg-primary-50 p-4 rounded-lg">
+          <div class="space-y-2">
+            <p class="text-sm"><%= recommended[:explanation] %></p>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <p><strong>House Price:</strong> <%= number_to_currency(house_price) %></p>
+              <% down_payment_percent = recommended[:down_payment_percentage].to_s.gsub('%', '').to_f %>
+              <p><strong>Down Payment:</strong> <%= number_to_currency(house_price * (down_payment_percent / 100)) %> (<%= down_payment_percent %>%)</p>
+              <p><strong>Monthly Payment:</strong> <%= number_to_currency(monthly_payment) %></p>
+            </div>
+            
+            <% if recommended[:immediate_next_steps].present? %>
+              <div class="mt-2">
+                <p class="text-sm font-medium mb-1">Immediate Next Steps:</p>
+                <ul class="list-disc list-inside text-sm space-y-1">
+                  <% recommended[:immediate_next_steps].each do |step| %>
+                    <li><%= step %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+  <% elsif analysis[:vacation_suggestions].present? %>
+    <%# Vacation Analysis %>
+    <h3 class="font-medium text-primary mb-2">Vacation Options</h3>
+    
+    <div class="space-y-4">
+      <% if analysis[:recommended_budget].present? %>
+        <div class="bg-primary-50 p-4 rounded-lg">
+          <h4 class="font-medium mb-2">Recommended Approach</h4>
+          <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <p><strong>Available Budget:</strong> <%= number_to_currency(analysis[:recommended_budget][:amount].to_s.gsub(/[$,]/, '').to_f) %></p>
+              <p><strong>Target Monthly Savings:</strong> <%= number_to_currency(analysis[:recommended_budget][:monthly_savings].to_s.gsub(/[$,]/, '').to_f) %></p>
+            </div>
+            <p class="text-sm"><%= analysis[:recommended_budget][:explanation] %></p>
+            <p class="text-sm"><strong>Timeline:</strong> <%= analysis[:recommended_budget][:timeline] %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="space-y-4">
+        <% analysis[:vacation_suggestions].each do |suggestion| %>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="space-y-2">
+              <h4 class="font-medium"><%= suggestion[:type] %></h4>
+              <div class="text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                  <p><strong>Total Cost:</strong> <%= number_to_currency(suggestion[:estimated_cost].to_s.gsub(/[$,]/, '').to_f) %></p>
+                  <% if suggestion[:savings_required] && suggestion[:savings_required].to_s.gsub(/[$,]/, '').to_f > 0 %>
+                    <p><strong>Additional Savings Needed:</strong> <%= number_to_currency(suggestion[:savings_required].to_s.gsub(/[$,]/, '').to_f) %></p>
+                  <% end %>
+                </div>
+                <p class="mt-2"><%= suggestion[:description] %></p>
+                <p class="mt-1 text-primary-700"><strong>Timeline:</strong> <%= suggestion[:timeline] %></p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div> 

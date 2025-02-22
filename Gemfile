@@ -60,6 +60,9 @@ gem "rqrcode", "~> 2.2"
 gem "prawn", "~> 2.4"
 gem "prawn-table", "~> 0.2.2"
 
+# AI and Machine Learning
+gem "ruby-openai"
+
 group :development, :test do
   gem "debug", platforms: %i[mri windows]
   gem "brakeman", require: false

@@ -1,0 +1,18 @@
+<%# locals: (analysis:) %>
+<div class="border-b pb-4">
+  <h3 class="font-medium text-primary mb-2">Financial Health</h3>
+  <div class="space-y-2">
+    <p class="text-sm"><strong>Status:</strong> <%= analysis.dig(:financial_health, :status)&.titleize %></p>
+    <p class="text-sm"><strong>Summary:</strong> <%= analysis.dig(:financial_health, :summary) %></p>
+    <% if analysis.dig(:financial_health, :key_metrics).present? %>
+      <div class="mt-2">
+        <p class="text-sm"><strong>Key Metrics:</strong></p>
+        <ul class="list-disc list-inside text-sm ml-2">
+          <li>Savings Rate: <%= analysis.dig(:financial_health, :key_metrics, :savings_rate) %></li>
+          <li>Debt Burden: <%= analysis.dig(:financial_health, :key_metrics, :debt_burden) %></li>
+          <li>Liquidity: <%= analysis.dig(:financial_health, :key_metrics, :liquidity) %></li>
+        </ul>
+      </div>
+    <% end %>
+  </div>
+</div> 

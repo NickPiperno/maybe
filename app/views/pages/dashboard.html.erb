@@ -59,6 +59,12 @@
         <%= render partial: "pages/dashboard/allocation_chart", locals: { account_groups: @account_groups } %>
       </div>
     </section>
+
+    <%# AI Insights Panel %>
+    <section>
+      <%= render "pages/ai_insights_panel", recommendations: @recommendations %>
+    </section>
+
     <section class="grid grid-cols-2 gap-4">
       <div class="bg-white p-4 border border-alpha-black-25 shadow-xs rounded-xl">
         <div class="flex flex-col gap-4 h-full">

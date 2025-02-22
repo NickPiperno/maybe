@@ -1,0 +1,15 @@
+<%# locals: (analysis:) %>
+<% if analysis[:risks].present? %>
+  <div>
+    <h3 class="font-medium text-primary mb-2">Risks & Considerations</h3>
+    <div class="space-y-2">
+      <% analysis[:risks].each do |risk| %>
+        <div class="bg-gray-50 p-3 rounded">
+          <p class="text-sm font-medium"><%= risk[:type] %></p>
+          <p class="text-sm text-gray-600"><%= risk[:description] %></p>
+          <p class="text-sm text-gray-600 mt-1"><strong>Mitigation:</strong> <%= risk[:mitigation] %></p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %> 
